@@ -1,9 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Dart
+name: Dart and Flutter
 
 on:
   push:
@@ -18,25 +13,66 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Note: This workflow uses the latest stable version of the Dart SDK.
-      # You can specify other versions if desired, see documentation here:
-      # https://github.com/dart-lang/setup-dart/blob/main/README.md
-      # - uses: dart-lang/setup-dart@v1
+      # Setup Dart SDK (latest stable)
       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
 
-      - name: Install dependencies
+      # Install Flutter (OS-based installation method)
+      - name: Install Flutter
+        run: |
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            if ! command -v brew &>/dev/null; then
+              /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+            brew install --cask flutter
+
+          elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            sudo apt update
+            sudo apt install snapd
+            sudo snap install flutter --classic
+
+          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+            if ! command -v choco &>/dev/null; then
+              powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; \
+                [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+                iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+            fi
+            choco install flutter
+          fi
+
+      # Validate Flutter installation
+      - name: Flutter Doctor
+        run: flutter doctor
+
+      # Configure FVM and setup Flutter version/channel
+      - name: Setup, Configure, and Validate Flutter
+        run: |
+          # Configure FVM
+          fvm flutter config-action;
+          
+          # Set Flutter version and channel
+          flutter channel 3.24.3;
+          flutter version stable;
+
+          # Install Flutter dependencies
+          flutter pub get;
+
+          # Analyze code
+          flutter analyze;
+
+          # Format code and run tests
+          dart format --set-exit-if-changed test lib integration_test;
+          flutter test;
+        uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+
+      # Dart specific setup (optional for Dart projects)
+      - name: Install Dart Dependencies
         run: dart pub get
 
-      # Uncomment this step to verify the use of 'dart format' on each commit.
-      # - name: Verify formatting
-      #   run: dart format --output=none --set-exit-if-changed .
-
-      # Consider passing '--fatal-infos' for slightly stricter analysis.
-      - name: Analyze project source
+      # Analyze Dart project source
+      - name: Analyze Dart Project Source
         run: dart analyze
 
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
-      - name: Run tests
+      # Run Dart tests (if it's a Dart project)
+      - name: Run Dart Tests
         run: dart test
