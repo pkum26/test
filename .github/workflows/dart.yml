@@ -1,4 +1,4 @@
-name: Dart and Flutter
+name: Dart and Flutter CI
 
 on:
   push:
@@ -7,18 +7,34 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
-        with:
-          sdk: '3.1.5'  # Specify the exact Dart version
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Install Flutter (OS-based installation method)
+      # Install Dart SDK version 3.1.5
+      - name: Install Dart SDK
+        run: |
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            brew tap dart-lang/dart
+            brew install dart@3.1.5
+          elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            sudo apt update
+            sudo apt-get install apt-transport-https
+            sudo sh -c 'wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
+            sudo sh -c 'wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
+            sudo apt update
+            sudo apt install dart=3.1.5-1
+          fi
+
+      # Validate Dart SDK version
+      - name: Verify Dart SDK installation
+        run: dart --version
+
+      # Install Flutter
       - name: Install Flutter
         run: |
           if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -26,12 +42,10 @@ jobs:
               /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             fi
             brew install --cask flutter
-
           elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
             sudo apt update
             sudo apt install snapd
             sudo snap install flutter --classic
-
           elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
             if ! command -v choco &>/dev/null; then
               powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; \
@@ -42,39 +56,25 @@ jobs:
           fi
 
       # Validate Flutter installation
-      - name: Flutter Doctor
+      - name: Verify Flutter installation
         run: flutter doctor
 
-      # Configure FVM
-      - name: Configure FVM
-        uses: kuhnroyal/flutter-fvm-config-action@v2
-        id: fvm-config-action
+      # Install Flutter dependencies
+      - name: Install Flutter dependencies
+        run: flutter pub get
 
-      # Set up and validate Flutter (separate step from FVM configuration)
-      - name: Setup, Configure, and Validate Flutter
-        run: |
-          # Set Flutter version and channel
-          flutter channel 3.24.3
-          flutter version stable
+      # Analyze the Flutter project
+      - name: Analyze project
+        run: flutter analyze
 
-          # Install Flutter dependencies
-          flutter pub get
+      # Format the code (with check if formatting is needed)
+      - name: Check formatting
+        run: dart format --set-exit-if-changed lib test integration_test
 
-          # Analyze code
-          flutter analyze
+      # Run Flutter tests
+      - name: Run Flutter tests
+        run: flutter test
 
-          # Format code and run tests
-          dart format --set-exit-if-changed test lib integration_test
-          flutter test
-
-      # Dart specific setup (optional for Dart projects)
-      - name: Install Dart Dependencies
-        run: dart pub get
-
-      # Analyze Dart project source
-      - name: Analyze Dart Project Source
-        run: dart analyze
-
-      # Run Dart tests (if it's a Dart project)
-      - name: Run Dart Tests
+      # Run Dart tests (optional if there are separate Dart tests)
+      - name: Run Dart tests
         run: dart test
