@@ -16,7 +16,7 @@ jobs:
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: '>=3.1.5 <4.0.0'
+          sdk: '3.1.5'  # Specify the exact Dart version
 
       # Install Flutter (OS-based installation method)
       - name: Install Flutter
