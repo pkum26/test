@@ -43,27 +43,27 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor
 
-      # Configure FVM and setup Flutter version/channel
-      - name: Setup, Configure, and Validate Flutter
-        run: |
-          # Configure FVM
-          fvm flutter config-action;
-          
-          # Set Flutter version and channel
-          flutter channel 3.24.3;
-          flutter version stable;
-
-          # Install Flutter dependencies
-          flutter pub get;
-
-          # Analyze code
-          flutter analyze;
-
-          # Format code and run tests
-          dart format --set-exit-if-changed test lib integration_test;
-          flutter test;
+      # Configure FVM
+      - name: Configure FVM
         uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
+
+      # Set up and validate Flutter (separate step from FVM configuration)
+      - name: Setup, Configure, and Validate Flutter
+        run: |
+          # Set Flutter version and channel
+          flutter channel 3.24.3
+          flutter version stable
+
+          # Install Flutter dependencies
+          flutter pub get
+
+          # Analyze code
+          flutter analyze
+
+          # Format code and run tests
+          dart format --set-exit-if-changed test lib integration_test
+          flutter test
 
       # Dart specific setup (optional for Dart projects)
       - name: Install Dart Dependencies
