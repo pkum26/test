@@ -16,44 +16,11 @@ jobs:
         uses: actions/checkout@v4
 
       # Install Dart SDK version 3.1.5
-      - name: Install Dart SDK
-        run: |
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            brew tap dart-lang/dart
-            brew install dart@3.1.5
-          elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            sudo apt update
-            sudo apt-get install apt-transport-https
-            sudo sh -c 'wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
-            sudo sh -c 'wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
-            sudo apt update
-            sudo apt install dart=3.1.5-1
-          fi
-
-      # Validate Dart SDK version
-      - name: Verify Dart SDK installation
-        run: dart --version
-
-      # Install Flutter
-      - name: Install Flutter
-        run: |
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            if ! command -v brew &>/dev/null; then
-              /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            fi
-            brew install --cask flutter
-          elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            sudo apt update
-            sudo apt install snapd
-            sudo snap install flutter --classic
-          elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-            if ! command -v choco &>/dev/null; then
-              powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; \
-                [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
-                iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-            fi
-            choco install flutter
-          fi
+      - name: Setup Flutter SDK
+        uses: flutter-actions/setup-flutter@v3
+        with:
+          channel: stable
+          version: 3.0.2
 
       # Validate Flutter installation
       - name: Verify Flutter installation
